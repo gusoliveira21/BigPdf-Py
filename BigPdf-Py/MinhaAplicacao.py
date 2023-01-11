@@ -1,9 +1,7 @@
+from PyPDF2 import PdfReader, PdfWriter
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-# from pyPDF2.pdf import PdfReader
-import PyPDF2
-# from PyPDF2 import PdfFileReader
 from JanelaSenhas import JanelaSenhas
 
 
@@ -25,9 +23,8 @@ class MinhaAplicacao(tk.Tk):
         botao_exibir_senhas = tk.Button(self.toolbar, text="Gerenciar senhas", command=self.exibir_senhas)
         botao_exibir_senhas.pack(side="left")
 
-        """# Botão para desbloquear arquivos PDF
-         botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear PDFs", command=self.desbloquear_pdfs)
-         botao_desbloquear.pack(side="left")"""
+        botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear PDFs", command=self.desbloquear_pdfs)
+        botao_desbloquear.pack(side="left")
 
         self.lista_arquivos = tk.Listbox(self, width=400, height=400)
         self.lista_arquivos.pack()
@@ -41,16 +38,17 @@ class MinhaAplicacao(tk.Tk):
             with open(pdf_file, 'rb') as file:
                 pdf = PdfReader(file)
 
-                if pdf.isEncrypted:
-                    password = tk.simpledialog.askstring("Senha", "Digite a senha para o arquivo {}:".format(pdf_file),
+                if pdf.is_encrypted:
+                    password = tk.simpledialog.askstring("Senha",
+                                                         "Digite a senha para o arquivo {}:".format(pdf_file),
                                                          show='*')
                     pdf.decrypt(password)
 
                 with open('decrypted.pdf', 'wb') as output:
-                    pdf_writer = PdfReader()
+                    pdf_writer = PdfWriter()
 
                     for page in pdf.pages:
-                        pdf_writer.addPage(page)
+                        pdf_writer.add_page(page)
 
                     pdf_writer.write(output)
 
