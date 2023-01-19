@@ -3,24 +3,25 @@ from tkinter import filedialog, messagebox
 
 
 class JanelaSenhas(tk.Toplevel):
+
     def __init__(self, master):
-        super().__init__(master)
-        self.geometry("300x200")
-        self.title("Senhas")
+            super().__init__(master)
+            self.geometry("300x200")
+            self.title("Senhas")
 
-        self.toolbar = tk.Frame(self)
-        self.toolbar.pack(side="top", fill="x")
+            self.toolbar = tk.Frame(self)
+            self.toolbar.pack(side="top", fill="x")
 
-        botao_adicionar = tk.Button(self.toolbar, text="Adicionar", command=self.adicionar_senhas)
-        botao_adicionar.pack(side="left")
+            botao_adicionar = tk.Button(self.toolbar, text="Adicionar", command=self.adicionar_senhas)
+            botao_adicionar.pack(side="left")
 
-        botao_excluir = tk.Button(self.toolbar, text="Excluir", command=self.excluir_senhas)
-        botao_excluir.pack(side="left")
+            botao_excluir = tk.Button(self.toolbar, text="Excluir", command=self.excluir_senhas)
+            botao_excluir.pack(side="left")
 
-        self.lista_senhas = tk.Listbox(self, width=200, height=200, selectmode="single")
-        self.lista_senhas.pack()
+            self.lista_senhas = tk.Listbox(self, width=200, height=200, selectmode="single")
+            self.lista_senhas.pack()
 
-        self.listar_senhas()
+            self.listar_senhas()
 
     def listar_senhas(self):
         self.limpa_lista_da_tela()

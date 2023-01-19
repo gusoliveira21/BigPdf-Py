@@ -23,7 +23,7 @@ class MinhaAplicacao(tk.Tk):
         botao_exibir_senhas = tk.Button(self.toolbar, text="Gerenciar senhas", command=self.exibir_senhas)
         botao_exibir_senhas.pack(side="left")
 
-        botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear PDFs", command=self.desbloquear_pdfs)
+        botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.desbloquear_pdf)
         botao_desbloquear.pack(side="left")
 
         self.lista_arquivos = tk.Listbox(self, width=400, height=400)
@@ -31,27 +31,31 @@ class MinhaAplicacao(tk.Tk):
 
         self.mainloop()
 
-    def desbloquear_pdfs(self):
+    def desbloquear_pdf(self):
         pdf_files = self.lista_arquivos.get(0, tk.END)
-
+        with open("senhas.txt", 'r') as password_file:
+            passwords = password_file.read().splitlines()
         for pdf_file in pdf_files:
+            valor = False
             with open(pdf_file, 'rb') as file:
                 pdf = PdfReader(file)
-
                 if pdf.is_encrypted:
-                    password = tk.simpledialog.askstring("Senha",
-                                                         "Digite a senha para o arquivo {}:".format(pdf_file),
-                                                         show='*')
-                    pdf.decrypt(password)
-
-                with open('decrypted.pdf', 'wb') as output:
-                    pdf_writer = PdfWriter()
-
-                    for page in pdf.pages:
-                        pdf_writer.add_page(page)
-
-                    pdf_writer.write(output)
-
+                    for password in passwords:
+                        if pdf.decrypt(password):
+                            valor = True
+                            messagebox.showinfo("Sucesso", "Sucesso!")
+                            break
+                    else:
+                        file.close()
+                else:
+                    """ TODO: ENTRA AQUI QUANDO NÃO ESTIVER ENCRIPTADO 
+                    quando isso acontecer, marca o arquivo como VERDE"""
+                if valor:
+                    with open('decrypted.pdf', 'wb') as output:
+                        pdf_writer = PdfWriter()
+                        for page in pdf.pages:
+                            pdf_writer.add_page(page)
+                        pdf_writer.write(output)
             os.replace('decrypted.pdf', pdf_file)
 
     def exibir_senhas(self):
