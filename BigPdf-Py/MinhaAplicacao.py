@@ -45,15 +45,15 @@ class MinhaAplicacao(tk.Tk):
             return pdf.is_encrypted
 
     def decrypt(self, pdf_file, password):
-        if os.path.isfile(pdf_file):
+        rota_arquivo = self.lista_arquivos.item(pdf_file)['text']
+        if os.path.isfile(rota_arquivo):
             try:
-                with open(pdf_file, 'rb') as file:
+                with open(rota_arquivo, 'rb') as file:
                     pdf = PdfReader(file)
                     if pdf.decrypt(password):
-                        messagebox.showerror("Sucesso", "SUCESSO")
+                        self.escrever_pdf_decifrado(pdf, rota_arquivo)
                         file.close()
                         return True
-                messagebox.showerror("Sucesso", "SUCESSO")
                 file.close()
                 return True
             except Exception as e:
@@ -61,6 +61,14 @@ class MinhaAplicacao(tk.Tk):
         else:
             messagebox.showerror("Erro", "Arquivo não encontrado")
 
+    def escrever_pdf_decifrado(self, pdf_file, output_name_file):
+        pdf_writer = PdfWriter()
+        for page in pdf_file.pages:
+            pdf_writer.add_page(page)
+        pdf_writer.write(output_name_file)
+        print(pdf_file,"\n")
+        print(output_name_file)
+        os.replace(output_name_file, pdf_file)
 
     def desbloquear_pdf(self):
         selecionado = self.lista_arquivos.selection()
@@ -76,18 +84,9 @@ class MinhaAplicacao(tk.Tk):
                         break
             else:
                 self.lista_arquivos.item(arquivo_selecionado, values="verde")
-            if valor:
-                self.escrever_pdf_decifrado(self.lista_arquivos.item(arquivo_selecionado)['text'], 'decrypted.pdf')
-
-
-    def escrever_pdf_decifrado(pdf_file, output_file):
-        with open(pdf_file, 'rb') as file:
-            pdf = PdfReader(file)
-            pdf_writer = PdfWriter()
-            for page in pdf.pages:
-                pdf_writer.add_page(page)
-            pdf_writer.write(output_file)
-        os.replace(output_file, pdf_file)
+            #if valor:
+                #print("escrevendo pdf")
+                #self.escrever_pdf_decifrado(self.lista_arquivos.item(arquivo_selecionado)['text'], 'decrypted.pdf')
 
     def exibir_senhas(self):
         JanelaSenhas(self)
