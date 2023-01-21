@@ -45,9 +45,10 @@ class MinhaAplicacao(tk.Tk):
             return pdf.is_encrypted
 
     def decrypt(self, pdf_file, password):
-        if os.path.isfile(pdf_file):
+        rota_arquivo = self.lista_arquivos.item(pdf_file)['text']
+        if os.path.isfile(rota_arquivo):
             try:
-                with open(pdf_file, 'rb') as file:
+                with open(rota_arquivo, 'rb') as file:
                     pdf = PdfReader(file)
                     if pdf.decrypt(password):
                         messagebox.showerror("Sucesso", "SUCESSO")
@@ -60,7 +61,6 @@ class MinhaAplicacao(tk.Tk):
                 logging.exception(e)
         else:
             messagebox.showerror("Erro", "Arquivo não encontrado")
-
 
     def desbloquear_pdf(self):
         selecionado = self.lista_arquivos.selection()
@@ -77,6 +77,7 @@ class MinhaAplicacao(tk.Tk):
             else:
                 self.lista_arquivos.item(arquivo_selecionado, values="verde")
             if valor:
+                print("escrevendo pdf")
                 self.escrever_pdf_decifrado(self.lista_arquivos.item(arquivo_selecionado)['text'], 'decrypted.pdf')
 
 
