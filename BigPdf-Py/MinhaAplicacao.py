@@ -67,11 +67,10 @@ class MinhaAplicacao(tk.Tk):
             messagebox.showerror("Erro", "Arquivo não encontrado")
 
     def escrever_pdf_decifrado(self, pdf_file, output_name_file):
-        pdf_writer = PdfWriter()
-        for page in pdf_file.pages:
-            pdf_writer.add_page(page)
-        pdf_writer.write(output_name_file)
-        os.replace(output_name_file, pdf_file)
+            pdf_writer = PdfWriter()
+            for page in pdf_file.pages:
+                pdf_writer.add_page(page)
+            pdf_writer.write(output_name_file)
 
     def desbloquear_pdf(self):
         selecionado = self.lista_arquivos.selection()
