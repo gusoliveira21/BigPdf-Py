@@ -1,15 +1,20 @@
+import logging
+
 from PyPDF2 import PdfReader, PdfWriter
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, Listbox
 from JanelaSenhas import JanelaSenhas
-
+from tkinter.ttk import Treeview
+import logging
 
 class MinhaAplicacao(tk.Tk):
+    list_pdf = []
+
     def __init__(self):
         super().__init__()
-        self.geometry("800x600")
-        self.title("Minha Aplicação")
+        self.geometry("800x800")
+        self.title("BigPdf")
 
         self.toolbar = tk.Frame(self)
         self.toolbar.pack(side="top", fill="x")
@@ -26,57 +31,83 @@ class MinhaAplicacao(tk.Tk):
         botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.desbloquear_pdf)
         botao_desbloquear.pack(side="left")
 
-        self.lista_arquivos = tk.Listbox(self, width=400, height=400)
+        self.lista_arquivos = Treeview(self, columns=('Nome', 'Descriptado'))
+        self.lista_arquivos.heading('#0', text='Nome')
+        self.lista_arquivos.heading('#1', text='Descriptado')
+        self.lista_arquivos.column('#0', width=598)
+        self.lista_arquivos.column('#1', width=200)
         self.lista_arquivos.pack()
 
         self.mainloop()
 
+    def method_is_encrypted(self, pdf_file):
+        with open(pdf_file, 'rb') as file:
+            pdf = PdfReader(file)
+            return pdf.is_encrypted
+
+    def esta_encrypted(self, pdf_selecionado):
+        pdf_file = self.lista_arquivos.item(pdf_selecionado)['text']
+        return self.method_is_encrypted(pdf_file)
+
+    def decrypt(self, pdf_file, password):
+        rota_arquivo = self.lista_arquivos.item(pdf_file)['text']
+        if os.path.isfile(rota_arquivo):
+            try:
+                with open(rota_arquivo, 'rb') as file:
+                    pdf = PdfReader(file)
+                    if pdf.decrypt(password):
+                        self.escrever_pdf_decifrado(pdf, rota_arquivo)
+                        file.close()
+                        return True
+                file.close()
+                return True
+            except Exception as e:
+                logging.exception(e)
+        else:
+            messagebox.showerror("Erro", "Arquivo não encontrado")
+
+    def escrever_pdf_decifrado(self, pdf_file, output_name_file):
+            pdf_writer = PdfWriter()
+            for page in pdf_file.pages:
+                pdf_writer.add_page(page)
+            pdf_writer.write(output_name_file)
+
     def desbloquear_pdf(self):
-        pdf_files = self.lista_arquivos.get(0, tk.END)
+        selecionado = self.lista_arquivos.selection()
         with open("senhas.txt", 'r') as password_file:
             passwords = password_file.read().splitlines()
-        for pdf_file in pdf_files:
-            valor = False
-            with open(pdf_file, 'rb') as file:
-                pdf = PdfReader(file)
-                if pdf.is_encrypted:
-                    for password in passwords:
-                        if pdf.decrypt(password):
-                            valor = True
-                            messagebox.showinfo("Sucesso", "Sucesso!")
-                            break
-                    else:
-                        file.close()
-                else:
-                    """ TODO: ENTRA AQUI QUANDO NÃO ESTIVER ENCRIPTADO 
-                    quando isso acontecer, marca o arquivo como VERDE"""
-                if valor:
-                    with open('decrypted.pdf', 'wb') as output:
-                        pdf_writer = PdfWriter()
-                        for page in pdf.pages:
-                            pdf_writer.add_page(page)
-                        pdf_writer.write(output)
-            os.replace('decrypted.pdf', pdf_file)
+        for arquivo_selecionado in selecionado:
+            if self.esta_encrypted(arquivo_selecionado):
+                for password in passwords:
+                    if self.decrypt(arquivo_selecionado, password):
+                        self.lista_arquivos.item(arquivo_selecionado, values="VERDE")
+                        break
+            else:
+                self.lista_arquivos.item(arquivo_selecionado, values="VERDE")
 
     def exibir_senhas(self):
-        janela_senhas = JanelaSenhas(self)
+        JanelaSenhas(self)
+
+    def method_setup_colum_decrypt(self, router):
+        if self.method_is_encrypted(router):
+            return "VERMELHO"
+        else:
+            return "VERDE"
 
     def selecionar_arquivos(self):
         arquivos = tk.filedialog.askopenfilenames(filetypes=[("Arquivos PDF", "*.pdf")])
-
         for arquivo in arquivos:
-            if arquivo not in self.lista_arquivos.get(0, tk.END):
-                self.lista_arquivos.insert(tk.END, arquivo)
+            if arquivo not in self.list_pdf:
+                self.list_pdf.append(arquivo)
+                self.lista_arquivos.insert('', 'end', text=arquivo, values=(self.method_setup_colum_decrypt(arquivo)))
             else:
                 messagebox.showerror("Erro", "O arquivo {} já existe na lista".format(arquivo))
 
     def remover_arquivos(self):
-        index = self.lista_arquivos.curselection()
-
-        if index:
-            self.lista_arquivos.delete(index)
-        else:
-            messagebox.showerror("Erro", "Nenhum arquivo selecionado para remover")
+        selecionado = self.lista_arquivos.selection()
+        for arquivo in selecionado:
+            self.list_pdf.remove(self.lista_arquivos.item(arquivo)['text'])
+            self.lista_arquivos.delete(arquivo)
 
 
 if __name__ == "__main__":
