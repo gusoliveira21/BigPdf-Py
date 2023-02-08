@@ -1,3 +1,4 @@
+import PyPDF2
 from PyPDF2 import PdfReader, PdfWriter
 import os
 import tkinter as tk
@@ -6,11 +7,18 @@ from JanelaSenhas import JanelaSenhas
 from tkinter.ttk import Treeview
 import logging
 
+
 def escrever_pdf_decifrado(pdf_file, output_name_file):
     pdf_writer = PdfWriter()
     for page in pdf_file.pages:
         pdf_writer.add_page(page)
     pdf_writer.write(output_name_file)
+
+
+def method_is_encrypted(pdf_file):
+    with open(pdf_file, 'rb') as file:
+        pdf = PdfReader(file)
+        return pdf.is_encrypted
 
 
 class MainApplication(tk.Tk):
@@ -38,6 +46,9 @@ class MainApplication(tk.Tk):
         botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.desbloquear_pdf)
         botao_desbloquear.pack(side="left")
 
+        botao_unir_pdf = tk.Button(self.toolbar, text="Unir PDFs", command=self.unir_pdf)
+        botao_unir_pdf.pack(side="left")
+
         self.lista_arquivos = Treeview(self, columns=('Nome',))
         self.lista_arquivos.heading('#0', text='Nome')
         self.lista_arquivos.column('#0', width=width)
@@ -45,14 +56,36 @@ class MainApplication(tk.Tk):
 
         self.mainloop()
 
-    def method_is_encrypted(self, pdf_file):
-        with open(pdf_file, 'rb') as file:
-            pdf = PdfReader(file)
-            return pdf.is_encrypted
+    def unir_pdf(self):
+        pdf_files = []
+        pdf_readers = []
+        pdfs_selecionados = self.lista_arquivos.selection()
+        for pdf in pdfs_selecionados:
+            if not self.esta_encrypted(pdf):
+                rota_arquivo = self.lista_arquivos.item(pdf)['text']
+                if os.path.isfile(rota_arquivo):
+                    try:
+                        pdf_files.append(open(rota_arquivo, 'rb'))
+                        pdf_readers.append(PyPDF2.PdfReader(rota_arquivo))
+                        merged_pdf = PyPDF2.PdfWriter()
+                        for pdf_reader in pdf_readers:
+                            for page in range(len(pdf_reader.pages)):
+                                merged_pdf.add_page(pdf_reader.pages[page])
+                    except Exception as e:
+                        logging.exception(e)
+                else:
+                    print("Não é um arquivo")
+            else:
+                print("mensagem avisando que arquivo esta com senha")
+        save_file = filedialog.asksaveasfile(mode ='wb', defaultextension=".pdf")
+        merged_pdf.write(save_file)
+        for pdf_file in pdf_files:
+            pdf_file.close()
+        save_file.close()
 
     def esta_encrypted(self, pdf_selecionado):
         pdf_file = self.lista_arquivos.item(pdf_selecionado)['text']
-        return self.method_is_encrypted(pdf_file)
+        return method_is_encrypted(pdf_file)
 
     def decrypt(self, pdf_file, password):
         rota_arquivo = self.lista_arquivos.item(pdf_file)['text']
@@ -102,7 +135,7 @@ class MainApplication(tk.Tk):
         self.lista_arquivos.selection_remove(arquivo)
 
     def definir_cor_arquivo(self, router):
-        if self.method_is_encrypted(router):
+        if method_is_encrypted(router):
             return "red"
         else:
             return "green"
@@ -130,6 +163,14 @@ class MainApplication(tk.Tk):
             self.list_pdf.remove(self.lista_arquivos.item(arquivo)['text'])
             self.lista_arquivos.delete(arquivo)
 
+    def salvar_pdf(self):
+        root = tk.Tk()
+        root.withdraw()
 
+        file_path = filedialog.asksaveasfilename(defaultextension=".pdf")
+
+        with open(file_path, "wb") as output_file:
+            # código para mesclar os arquivos PDF aqui
+            output_file.write(merged_pdf_bytes)
 if __name__ == "__main__":
     app = MainApplication()
