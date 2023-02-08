@@ -1,24 +1,33 @@
-import PyPDF2
-from PyPDF2 import PdfReader, PdfWriter
+import logging
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, Listbox
-from JanelaSenhas import JanelaSenhas
+from tkinter import filedialog, messagebox
 from tkinter.ttk import Treeview
-import logging
+
+import PyPDF2
+from PyPDF2 import PdfReader, PdfWriter
+
+from WindowPassword import PasswordWindow
 
 
-def escrever_pdf_decifrado(pdf_file, output_name_file):
+def write_unlocked_pdf(pdf_file, output_name_file):
     pdf_writer = PdfWriter()
     for page in pdf_file.pages:
         pdf_writer.add_page(page)
     pdf_writer.write(output_name_file)
 
 
-def method_is_encrypted(pdf_file):
+def method_pdf_is_locked(pdf_file):
     with open(pdf_file, 'rb') as file:
         pdf = PdfReader(file)
         return pdf.is_encrypted
+
+
+def set_file_color(router):
+    if method_pdf_is_locked(router):
+        return "red"
+    else:
+        return "green"
 
 
 class MainApplication(tk.Tk):
@@ -34,67 +43,75 @@ class MainApplication(tk.Tk):
         self.toolbar = tk.Frame(self)
         self.toolbar.pack(side="top", fill="x")
 
-        botao_selecionar = tk.Button(self.toolbar, text="Selecionar arquivos", command=self.selecionar_arquivos)
-        botao_selecionar.pack(side="left")
+        button_select_files = tk.Button(self.toolbar, text="Selecionar arquivos", command=self.select_files)
+        button_select_files.pack(side="left")
 
-        botao_remover = tk.Button(self.toolbar, text="Remover arquivos", command=self.remover_arquivos)
-        botao_remover.pack(side="left")
+        button_remove_files = tk.Button(self.toolbar, text="Remover arquivos", command=self.remove_files)
+        button_remove_files.pack(side="left")
 
-        botao_exibir_senhas = tk.Button(self.toolbar, text="Gerenciar senhas", command=self.exibir_senhas)
-        botao_exibir_senhas.pack(side="left")
+        button_display_passwords = tk.Button(self.toolbar, text="Gerenciar senhas", command=self.display_passwords)
+        button_display_passwords.pack(side="left")
 
-        botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.desbloquear_pdf)
-        botao_desbloquear.pack(side="left")
+        button_unlock_pdf = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.unlock_pdf)
+        button_unlock_pdf.pack(side="left")
 
-        botao_unir_pdf = tk.Button(self.toolbar, text="Unir PDFs", command=self.unir_pdf)
-        botao_unir_pdf.pack(side="left")
+        button_merge_pdf = tk.Button(self.toolbar, text="Unir PDFs", command=self.merge_pdfs)
+        button_merge_pdf.pack(side="left")
 
-        self.lista_arquivos = Treeview(self, columns=('Nome',))
-        self.lista_arquivos.heading('#0', text='Nome')
-        self.lista_arquivos.column('#0', width=width)
-        self.lista_arquivos.pack()
+        button_remove_pages_pdf = tk.Button(self.toolbar, text="Apaga páginas", command=self.remove_pages_pdfs)
+        button_remove_pages_pdf.pack(side="left")
+
+        self.list_files = Treeview(self, columns=('Nome',))
+        self.list_files.heading('#0', text='Nome')
+        self.list_files.column('#0', width=width)
+        self.list_files.pack()
 
         self.mainloop()
 
-    def unir_pdf(self):
+    def remove_pages_pdfs(self):
+        return 0
+
+    def merge_pdfs(self):
         pdf_files = []
         pdf_readers = []
-        pdfs_selecionados = self.lista_arquivos.selection()
-        for pdf in pdfs_selecionados:
-            if not self.esta_encrypted(pdf):
-                rota_arquivo = self.lista_arquivos.item(pdf)['text']
-                if os.path.isfile(rota_arquivo):
+        selected_files = self.list_files.selection()
+        for file in selected_files:
+            if not self.is_lock(file):
+                router_file = self.list_files.item(file)['text']
+                if os.path.isfile(router_file):
                     try:
-                        pdf_files.append(open(rota_arquivo, 'rb'))
-                        pdf_readers.append(PyPDF2.PdfReader(rota_arquivo))
+                        pdf_files.append(open(router_file, 'rb'))
+                        pdf_readers.append(PyPDF2.PdfReader(router_file))
                         merged_pdf = PyPDF2.PdfWriter()
                         for pdf_reader in pdf_readers:
                             for page in range(len(pdf_reader.pages)):
                                 merged_pdf.add_page(pdf_reader.pages[page])
+                        self.remove_selection(file)
                     except Exception as e:
                         logging.exception(e)
                 else:
                     print("Não é um arquivo")
             else:
                 print("mensagem avisando que arquivo esta com senha")
-        save_file = filedialog.asksaveasfile(mode ='wb', defaultextension=".pdf")
+        save_file = filedialog.asksaveasfile(mode='wb', defaultextension=".pdf")
         merged_pdf.write(save_file)
         for pdf_file in pdf_files:
             pdf_file.close()
         save_file.close()
 
-    def esta_encrypted(self, pdf_selecionado):
-        pdf_file = self.lista_arquivos.item(pdf_selecionado)['text']
-        return method_is_encrypted(pdf_file)
+
+    def is_lock(self, pdf_selected):
+        pdf_file = self.list_files.item(pdf_selected)['text']
+        return method_pdf_is_locked(pdf_file)
 
     def decrypt(self, pdf_file, password):
-        rota_arquivo = self.lista_arquivos.item(pdf_file)['text']
-        if os.path.isfile(rota_arquivo):
+        router_file = self.list_files.item(pdf_file)['text']
+        if os.path.isfile(router_file):
             try:
-                with open(rota_arquivo, 'rb') as file:
+                with open(router_file, 'rb') as file:
                     pdf = PdfReader(file)
                     if pdf.decrypt(password):
-                        escrever_pdf_decifrado(pdf, rota_arquivo)
+                        write_unlocked_pdf(pdf, router_file)
                         file.close()
                         return True
                     else:
@@ -107,70 +124,56 @@ class MainApplication(tk.Tk):
         else:
             messagebox.showerror("Erro", "decrypt: Arquivo não encontrado")
 
-    def desbloquear_pdf(self):
-        selecionado = self.lista_arquivos.selection()
+    def unlock_pdf(self):
+        files_selected = self.list_files.selection()
         with open("senhas.txt", 'r') as password_file:
             passwords = password_file.read().splitlines()
-        for arquivo_selecionado in selecionado:
-            if self.esta_encrypted(arquivo_selecionado):
+        for file in files_selected:
+            if self.is_lock(file):
                 for password in passwords:
-                    if self.decrypt(arquivo_selecionado, password):
-                        self.lista_arquivos.item(arquivo_selecionado, tags="green")
-                        self.aplicar_cor_pdf("green")
-                        self.remove_selecao(arquivo_selecionado)
+                    if self.decrypt(file, password):
+                        self.list_files.item(file, tags="green")
+                        self.apply_pdf_color("green")
+                        self.remove_selection(file)
                         break
                     else:
-                        self.remove_selecao(arquivo_selecionado)
-                        print("desbloquear_pdf: Provavelmente não tem senha para esse pdf")
+                        self.remove_selection(file)
+                        print("unlock_pdf: Provavelmente não tem senha para esse pdf")
                 else:
-                    print("desbloquear_pdf: Realmente nao tem senha pra ele")
-                    self.remove_selecao(arquivo_selecionado)
+                    print("unlock_pdf: Realmente nao tem senha pra ele")
+                    self.remove_selection(file)
             else:
-                self.remove_selecao(arquivo_selecionado)
+                self.remove_selection(file)
 
-    def exibir_senhas(self):
-        JanelaSenhas(self)
+    def display_passwords(self):
+        PasswordWindow(self)
 
-    def remove_selecao(self, arquivo):
-        self.lista_arquivos.selection_remove(arquivo)
+    def remove_selection(self, file):
+        self.list_files.selection_remove(file)
 
-    def definir_cor_arquivo(self, router):
-        if method_is_encrypted(router):
-            return "red"
+    def apply_pdf_color(self, color_selected):
+        if color_selected == "green":
+            self.list_files.tag_configure("green", background="#00FF00")
         else:
-            return "green"
+            self.list_files.tag_configure("red", background="#ff5863")
 
-    def aplicar_cor_pdf(self, cor_definida):
-        if cor_definida == "green":
-            self.lista_arquivos.tag_configure("green", background="#00FF00")
-        else:
-            self.lista_arquivos.tag_configure("red", background="#ff5863")
-
-    def selecionar_arquivos(self):
-        arquivos = tk.filedialog.askopenfilenames(filetypes=[("Arquivos PDF", "*.pdf")])
-        for arquivo in arquivos:
-            if arquivo not in self.list_pdf:
-                self.list_pdf.append(arquivo)
-                tag_cor = self.definir_cor_arquivo(arquivo)
-                self.lista_arquivos.insert('', 'end', text=arquivo, tags=tag_cor)
-                self.aplicar_cor_pdf(tag_cor)
+    def select_files(self):
+        selected_files = tk.filedialog.askopenfilenames(filetypes=[("Arquivos PDF", "*.pdf")])
+        for file in selected_files:
+            if file not in self.list_pdf:
+                self.list_pdf.append(file)
+                tag_color = set_file_color(file)
+                self.list_files.insert('', 'end', text=file, tags=tag_color)
+                self.apply_pdf_color(tag_color)
             else:
-                messagebox.showerror("Erro", "O arquivo {} já existe na lista".format(arquivo))
+                messagebox.showerror("Erro", "O file {} já existe na lista".format(file))
 
-    def remover_arquivos(self):
-        selecionado = self.lista_arquivos.selection()
-        for arquivo in selecionado:
-            self.list_pdf.remove(self.lista_arquivos.item(arquivo)['text'])
-            self.lista_arquivos.delete(arquivo)
+    def remove_files(self):
+        selected_files = self.list_files.selection()
+        for file in selected_files:
+            self.list_pdf.remove(self.list_files.item(file)['text'])
+            self.list_files.delete(file)
 
-    def salvar_pdf(self):
-        root = tk.Tk()
-        root.withdraw()
 
-        file_path = filedialog.asksaveasfilename(defaultextension=".pdf")
-
-        with open(file_path, "wb") as output_file:
-            # código para mesclar os arquivos PDF aqui
-            output_file.write(merged_pdf_bytes)
 if __name__ == "__main__":
     app = MainApplication()
