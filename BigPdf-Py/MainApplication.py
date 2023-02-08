@@ -1,5 +1,3 @@
-import logging
-
 from PyPDF2 import PdfReader, PdfWriter
 import os
 import tkinter as tk
@@ -8,12 +6,21 @@ from JanelaSenhas import JanelaSenhas
 from tkinter.ttk import Treeview
 import logging
 
-class MinhaAplicacao(tk.Tk):
+def escrever_pdf_decifrado(pdf_file, output_name_file):
+    pdf_writer = PdfWriter()
+    for page in pdf_file.pages:
+        pdf_writer.add_page(page)
+    pdf_writer.write(output_name_file)
+
+
+class MainApplication(tk.Tk):
     list_pdf = []
 
     def __init__(self):
         super().__init__()
-        self.geometry("800x800")
+        width = "600"
+        height = "400"
+        self.geometry(width + "x" + height)
         self.title("BigPdf")
 
         self.toolbar = tk.Frame(self)
@@ -31,11 +38,9 @@ class MinhaAplicacao(tk.Tk):
         botao_desbloquear = tk.Button(self.toolbar, text="Desbloquear um PDF", command=self.desbloquear_pdf)
         botao_desbloquear.pack(side="left")
 
-        self.lista_arquivos = Treeview(self, columns=('Nome', 'Descriptado'))
+        self.lista_arquivos = Treeview(self, columns=('Nome',))
         self.lista_arquivos.heading('#0', text='Nome')
-        self.lista_arquivos.heading('#1', text='Descriptado')
-        self.lista_arquivos.column('#0', width=598)
-        self.lista_arquivos.column('#1', width=200)
+        self.lista_arquivos.column('#0', width=width)
         self.lista_arquivos.pack()
 
         self.mainloop()
@@ -56,21 +61,18 @@ class MinhaAplicacao(tk.Tk):
                 with open(rota_arquivo, 'rb') as file:
                     pdf = PdfReader(file)
                     if pdf.decrypt(password):
-                        self.escrever_pdf_decifrado(pdf, rota_arquivo)
+                        escrever_pdf_decifrado(pdf, rota_arquivo)
                         file.close()
                         return True
+                    else:
+                        file.close()
+                        return False
                 file.close()
                 return True
             except Exception as e:
                 logging.exception(e)
         else:
-            messagebox.showerror("Erro", "Arquivo não encontrado")
-
-    def escrever_pdf_decifrado(self, pdf_file, output_name_file):
-            pdf_writer = PdfWriter()
-            for page in pdf_file.pages:
-                pdf_writer.add_page(page)
-            pdf_writer.write(output_name_file)
+            messagebox.showerror("Erro", "decrypt: Arquivo não encontrado")
 
     def desbloquear_pdf(self):
         selecionado = self.lista_arquivos.selection()
@@ -80,26 +82,45 @@ class MinhaAplicacao(tk.Tk):
             if self.esta_encrypted(arquivo_selecionado):
                 for password in passwords:
                     if self.decrypt(arquivo_selecionado, password):
-                        self.lista_arquivos.item(arquivo_selecionado, values="VERDE")
+                        self.lista_arquivos.item(arquivo_selecionado, tags="green")
+                        self.aplicar_cor_pdf("green")
+                        self.remove_selecao(arquivo_selecionado)
                         break
+                    else:
+                        self.remove_selecao(arquivo_selecionado)
+                        print("desbloquear_pdf: Provavelmente não tem senha para esse pdf")
+                else:
+                    print("desbloquear_pdf: Realmente nao tem senha pra ele")
+                    self.remove_selecao(arquivo_selecionado)
             else:
-                self.lista_arquivos.item(arquivo_selecionado, values="VERDE")
+                self.remove_selecao(arquivo_selecionado)
 
     def exibir_senhas(self):
         JanelaSenhas(self)
 
-    def method_setup_colum_decrypt(self, router):
+    def remove_selecao(self, arquivo):
+        self.lista_arquivos.selection_remove(arquivo)
+
+    def definir_cor_arquivo(self, router):
         if self.method_is_encrypted(router):
-            return "VERMELHO"
+            return "red"
         else:
-            return "VERDE"
+            return "green"
+
+    def aplicar_cor_pdf(self, cor_definida):
+        if cor_definida == "green":
+            self.lista_arquivos.tag_configure("green", background="#00FF00")
+        else:
+            self.lista_arquivos.tag_configure("red", background="#ff5863")
 
     def selecionar_arquivos(self):
         arquivos = tk.filedialog.askopenfilenames(filetypes=[("Arquivos PDF", "*.pdf")])
         for arquivo in arquivos:
             if arquivo not in self.list_pdf:
                 self.list_pdf.append(arquivo)
-                self.lista_arquivos.insert('', 'end', text=arquivo, values=(self.method_setup_colum_decrypt(arquivo)))
+                tag_cor = self.definir_cor_arquivo(arquivo)
+                self.lista_arquivos.insert('', 'end', text=arquivo, tags=tag_cor)
+                self.aplicar_cor_pdf(tag_cor)
             else:
                 messagebox.showerror("Erro", "O arquivo {} já existe na lista".format(arquivo))
 
@@ -111,4 +132,4 @@ class MinhaAplicacao(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = MinhaAplicacao()
+    app = MainApplication()
