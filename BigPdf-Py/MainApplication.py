@@ -36,7 +36,7 @@ class MainApplication(tk.Tk):
     def __init__(self):
         super().__init__()
         width = "600"
-        height = "400"
+        height = "250"
         self.geometry(width + "x" + height)
         self.title("BigPdf")
 
