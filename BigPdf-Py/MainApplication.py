@@ -58,8 +58,8 @@ class MainApplication(tk.Tk):
         button_merge_pdf = tk.Button(self.toolbar, text="Unir PDFs", command=self.merge_pdfs)
         button_merge_pdf.pack(side="left")
 
-        button_remove_pages_pdf = tk.Button(self.toolbar, text="Apaga páginas", command=self.remove_pages_pdfs)
-        button_remove_pages_pdf.pack(side="left")
+        #button_remove_pages_pdf = tk.Button(self.toolbar, text="Apaga páginas", command=self.remove_pages_pdfs)
+        #button_remove_pages_pdf.pack(side="left")
 
         self.list_files = Treeview(self, columns=('Nome',))
         self.list_files.heading('#0', text='Nome')
