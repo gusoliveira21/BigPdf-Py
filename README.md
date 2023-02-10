@@ -4,7 +4,7 @@
  - [x] unificar todos os pdf's
  - [ ] apagar páginas
  
- ## Ferramentas utilizadas (libs):
+ ## Libs utilizadas:
  - PyPDF2: Realiza algumas operações em arquivos PDF (leitura, escrita, ...)
  - Tkinter: Responsável pelo GUI (Interface Gráfica do Usuário)
  - os: É muito útil quando você precisar mexer no sistema de arquivos.
